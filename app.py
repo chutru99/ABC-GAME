@@ -162,7 +162,11 @@ elif st.session_state.fase == "juego":
                 key="palabra_input"
             )
 
-            # Botón para comprobar
+            # Lista de palabras ya jugadas
+            if "palabras_usadas" not in st.session_state:
+                st.session_state.palabras_usadas = set()
+
+            # Botón para comprobar palabra
             if st.button("✅ Comprobar palabra"):
                 palabra = st.session_state.palabra_actual.strip().lower()
                 jugador = st.session_state.jugador_actual
@@ -170,12 +174,17 @@ elif st.session_state.fase == "juego":
 
                 if not palabra or not letras or len(letras) != 3:
                     st.warning("Introduce tres letras válidas y una palabra.")
+                elif palabra in st.session_state.palabras_usadas:
+                    st.warning(f"⚠️ La palabra '{palabra}' ya fue utilizada.")
                 else:
                     if palabra in palabras and contiene_en_orden(palabra, letras):
                         st.success(f"✅ ¡Correcto! '{palabra}' es válida para {letras.upper()}.")
                         st.session_state.jugadores[jugador] += 1
+                        st.session_state.palabras_usadas.add(palabra)
+                        st.rerun()  # 🔄 fuerza la actualización inmediata de puntuación
                     else:
                         st.error(f"❌ '{palabra}' no es válida para {letras.upper()}.")
+                        st.session_state.palabras_usadas.add(palabra)
 
             # Mostrar resultado anterior si existe
             if "ultimo_resultado" in st.session_state:
