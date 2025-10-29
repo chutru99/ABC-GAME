@@ -2,7 +2,7 @@ import pickle
 import streamlit as st
 
 # ===============================
-# 🔹 Cargar el diccionario una sola vez
+# 🔹 Cargar el diccionario solo una vez
 # ===============================
 @st.cache_data
 def cargar_palabras():
@@ -23,29 +23,27 @@ def contiene_en_orden(palabra, letras):
                 return True
     return False
 
+
 # ===============================
-# 🔹 Inicialización del estado
+# 🔹 Inicializar variables de sesión
 # ===============================
-if "fase" not in st.session_state:
-    st.session_state.fase = "inicio"
-if "jugadores" not in st.session_state:
-    st.session_state.jugadores = {}
-if "letras" not in st.session_state:
-    st.session_state.letras = ""
-if "palabra_actual" not in st.session_state:
-    st.session_state.palabra_actual = ""
-if "jugador_actual" not in st.session_state:
-    st.session_state.jugador_actual = ""
-if "palabras_usadas" not in st.session_state:
-    st.session_state.palabras_usadas = set()
-if "ultimo_resultado" not in st.session_state:
-    st.session_state.ultimo_resultado = ""
+for clave, valor in {
+    "fase": "inicio",
+    "jugadores": {},
+    "letras": "",
+    "palabras_usadas": set(),
+    "ultimo_resultado": "",
+    "ultima_accion": None
+}.items():
+    if clave not in st.session_state:
+        st.session_state[clave] = valor
+
 
 # ===============================
 # 🔹 Fase 1: Inicio
 # ===============================
 if st.session_state.fase == "inicio":
-    st.title("🔤 ABC GAME")
+    st.title("🔤 Juego de las Matrículas")
     st.write("Compite con tus amigos para encontrar palabras válidas con las letras de una matrícula 🚗")
 
     if st.button("🚀 Start"):
@@ -57,7 +55,6 @@ if st.session_state.fase == "inicio":
 # ===============================
 elif st.session_state.fase == "instrucciones":
     st.title("📘 Instrucciones del Juego")
-
     st.markdown(
         """
         ### 🚗 Objetivo del juego  
@@ -69,14 +66,12 @@ elif st.session_state.fase == "instrucciones":
         1. Introduce las tres letras de la matrícula.  
         2. Cada jugador, por turnos, escribe una palabra y selecciona su nombre.  
         3. Si la palabra es válida y existe en el diccionario → gana **1 punto**.  
+        4. Una palabra solo se puede usar **una vez** durante toda la partida.
 
         ### 🔁 Fin del juego
         Puedes reiniciar en cualquier momento para volver al inicio y crear una nueva partida.
         """
     )
-
-    st.info("💡 Consejo: no se distingue entre mayúsculas o minúsculas, y las letras deben estar en orden.")
-
     if st.button("➡️ Continuar"):
         st.session_state.fase = "config"
         st.rerun()
@@ -89,7 +84,6 @@ elif st.session_state.fase == "config":
 
     num = st.number_input("Número de jugadores:", min_value=1, max_value=10, value=2)
     nombres = []
-
     with st.form("form_nombres"):
         for i in range(num):
             nombre = st.text_input(f"Nombre del jugador {i+1}:").strip()
@@ -104,101 +98,87 @@ elif st.session_state.fase == "config":
         else:
             st.warning("Debes introducir al menos un nombre válido.")
 
+
 # ===============================
 # 🔹 Fase 4: Juego principal
 # ===============================
 elif st.session_state.fase == "juego":
     st.title("🎮 Juego de las Matrículas")
 
-    # ===== Clasificación =====
+    # Mostrar clasificación
     st.subheader("🏆 Clasificación actual")
-    ranking = sorted(st.session_state.jugadores.items(), key=lambda x: x[1], reverse=True)
-    for nombre, puntos in ranking:
+    for nombre, puntos in sorted(st.session_state.jugadores.items(), key=lambda x: x[1], reverse=True):
         st.write(f"{nombre}: {puntos} puntos")
 
     st.divider()
 
-    # ===== Introducción de letras =====
-    letras_usuario = st.text_input(
-        "Letras de la matrícula (3 letras):",
-        st.session_state.letras,
-        key="input_letras"
-    )
+    # Introducir letras
+    letras = st.text_input("Letras de la matrícula (3 letras):", value=st.session_state.letras).strip().lower()
+    if letras and len(letras) == 3 and letras.isalpha():
+        st.session_state.letras = letras
+        st.write(f"Letras activas: **{letras.upper()}**")
 
-    if letras_usuario:
-        st.session_state.letras = letras_usuario.strip().lower()
+        # Seleccionar jugador y palabra
+        jugador = st.selectbox("Selecciona el jugador:", list(st.session_state.jugadores.keys()))
+        palabra = st.text_input("Introduce la palabra propuesta:").strip().lower()
 
-        if len(st.session_state.letras) == 3 and st.session_state.letras.isalpha():
-            st.write(f"Letras activas: **{st.session_state.letras.upper()}**")
-
-            st.subheader("🗣️ Turno del jugador")
-
-            jugador = st.selectbox(
-                "Selecciona el jugador que introduce la palabra:",
-                list(st.session_state.jugadores.keys()),
-                key="jugador_selector"
-            )
-
-            palabra = st.text_input(
-                "Introduce la palabra propuesta:",
-                key="palabra_input"
-            ).strip().lower()
-
-            # ====== Botón comprobar palabra ======
-            if st.button("🧩 Comprobar palabra"):
-                letras = st.session_state.letras
-
-                if not palabra or not letras or len(letras) != 3:
-                    st.session_state.ultimo_resultado = "⚠️ Introduce tres letras válidas y una palabra."
-                elif palabra in st.session_state.palabras_usadas:
-                    st.session_state.ultimo_resultado = f"⚠️ La palabra '{palabra}' ya fue utilizada."
-                elif palabra in palabras and contiene_en_orden(palabra, letras):
-                    st.session_state.palabras_usadas.add(palabra)
-                    st.session_state.jugadores[jugador] += 1
-                    st.session_state.ultimo_resultado = f"🧩 Palabra válida: '{palabra.upper()}' (+1 punto para {jugador})"
-                else:
-                    st.session_state.palabras_usadas.add(palabra)
-                    st.session_state.ultimo_resultado = f"❌ No existe la palabra '{palabra.upper()}' o no sigue el orden de letras."
-
-            # ===== Mostrar resultado =====
-            if st.session_state.ultimo_resultado:
-                msg = st.session_state.ultimo_resultado
-                if msg.startswith("🧩"):
-                    st.success(msg)
-                elif msg.startswith("⚠️"):
-                    st.warning(msg)
-                else:
-                    st.error(msg)
-
-            # 🔄 Redibujar marcador en tiempo real
-            st.subheader("🏆 Marcador actualizado")
-            for nombre, puntos in st.session_state.jugadores.items():
-                st.write(f"{nombre}: {puntos} puntos")
-
-        else:
-            st.warning("Introduce exactamente **3 letras** válidas (A-Z).")
-
-    # ===== Ver palabras válidas =====
-    if st.session_state.letras:
-        letras = st.session_state.letras
-        with st.expander("📜 Ver todas las palabras válidas para estas letras"):
-            palabras_validas = [p for p in palabras if contiene_en_orden(p, letras)]
-            if palabras_validas:
-                st.write(f"Se encontraron **{len(palabras_validas)}** palabras que contienen '{letras.upper()}' en orden:")
-                st.text(", ".join(sorted(palabras_validas)))
+        # Comprobar palabra
+        if st.button("🧩 Comprobar palabra"):
+            if not palabra:
+                st.session_state.ultimo_resultado = "⚠️ Introduce una palabra."
+            elif palabra in st.session_state.palabras_usadas:
+                st.session_state.ultimo_resultado = f"⚠️ La palabra '{palabra}' ya fue utilizada."
+            elif palabra in palabras and contiene_en_orden(palabra, letras):
+                st.session_state.palabras_usadas.add(palabra)
+                st.session_state.jugadores[jugador] += 1
+                st.session_state.ultimo_resultado = f"🧩 Palabra válida: '{palabra.upper()}' (+1 punto para {jugador})"
             else:
-                st.warning(f"No hay palabras en el diccionario con '{letras.upper()}' en ese orden.")
+                st.session_state.palabras_usadas.add(palabra)
+                st.session_state.ultimo_resultado = f"❌ '{palabra.upper()}' no existe o no sigue el orden de letras."
 
-    # ===== Reiniciar partida =====
+            st.session_state.ultima_accion = True  # bandera para redibujar
+
+    elif letras:
+        st.warning("Introduce exactamente 3 letras válidas.")
+
+    # Mostrar resultado (solo si se jugó)
+    if st.session_state.ultimo_resultado:
+        msg = st.session_state.ultimo_resultado
+        if msg.startswith("🧩"):
+            st.success(msg)
+        elif msg.startswith("⚠️"):
+            st.warning(msg)
+        else:
+            st.error(msg)
+
+    # Redibujar el marcador inmediatamente
+    if st.session_state.ultima_accion:
+        st.divider()
+        st.subheader("🏆 Marcador actualizado")
+        for nombre, puntos in sorted(st.session_state.jugadores.items(), key=lambda x: x[1], reverse=True):
+            st.write(f"{nombre}: {puntos} puntos")
+        st.session_state.ultima_accion = False
+
+    # Palabras posibles
+    if st.session_state.letras:
+        with st.expander("📜 Ver todas las palabras válidas para estas letras"):
+            posibles = [p for p in palabras if contiene_en_orden(p, st.session_state.letras)]
+            if posibles:
+                st.write(f"Se encontraron {len(posibles)} palabras:")
+                st.text(", ".join(sorted(posibles)))
+            else:
+                st.warning("No hay palabras con ese patrón.")
+
+    # Reiniciar partida
     st.divider()
     if st.button("🔁 Reiniciar partida"):
-        for clave in ["jugadores", "letras", "palabra_actual", "jugador_actual",
-                      "ultimo_resultado", "palabras_usadas"]:
-            if clave in st.session_state:
-                del st.session_state[clave]
+        for k in ["jugadores", "letras", "palabras_usadas", "ultimo_resultado", "ultima_accion"]:
+            if k in st.session_state:
+                del st.session_state[k]
         st.session_state.fase = "inicio"
         st.success("🔁 Partida reiniciada. Volviendo al inicio...")
         st.rerun()
+
 
 
 
