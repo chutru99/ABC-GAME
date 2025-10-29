@@ -11,7 +11,6 @@ def cargar_palabras():
 
 palabras = cargar_palabras()
 
-
 # ===============================
 # 🔹 Función auxiliar
 # ===============================
@@ -23,7 +22,6 @@ def contiene_en_orden(palabra, letras):
             if i == len(letras):
                 return True
     return False
-
 
 # ===============================
 # 🔹 Inicialización del estado
@@ -43,18 +41,16 @@ if "palabras_usadas" not in st.session_state:
 if "ultimo_resultado" not in st.session_state:
     st.session_state.ultimo_resultado = ""
 
-
 # ===============================
 # 🔹 Fase 1: Inicio
 # ===============================
 if st.session_state.fase == "inicio":
-    st.title("🔤 Juego de las Matrículas")
+    st.title("🔤 ABC GAME")
     st.write("Compite con tus amigos para encontrar palabras válidas con las letras de una matrícula 🚗")
 
     if st.button("🚀 Start"):
         st.session_state.fase = "instrucciones"
         st.rerun()
-
 
 # ===============================
 # 🔹 Fase 2: Instrucciones
@@ -85,7 +81,6 @@ elif st.session_state.fase == "instrucciones":
         st.session_state.fase = "config"
         st.rerun()
 
-
 # ===============================
 # 🔹 Fase 3: Configuración de jugadores
 # ===============================
@@ -108,7 +103,6 @@ elif st.session_state.fase == "config":
             st.rerun()
         else:
             st.warning("Debes introducir al menos un nombre válido.")
-
 
 # ===============================
 # 🔹 Fase 4: Juego principal
@@ -166,9 +160,6 @@ elif st.session_state.fase == "juego":
                     st.session_state.palabras_usadas.add(palabra)
                     st.session_state.ultimo_resultado = f"❌ No existe la palabra '{palabra.upper()}' o no sigue el orden de letras."
 
-                # 🔄 Refrescar sin perder contexto
-                st.experimental_update()
-
             # ===== Mostrar resultado =====
             if st.session_state.ultimo_resultado:
                 msg = st.session_state.ultimo_resultado
@@ -178,6 +169,11 @@ elif st.session_state.fase == "juego":
                     st.warning(msg)
                 else:
                     st.error(msg)
+
+            # 🔄 Redibujar marcador en tiempo real
+            st.subheader("🏆 Marcador actualizado")
+            for nombre, puntos in st.session_state.jugadores.items():
+                st.write(f"{nombre}: {puntos} puntos")
 
         else:
             st.warning("Introduce exactamente **3 letras** válidas (A-Z).")
