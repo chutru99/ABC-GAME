@@ -105,14 +105,7 @@ elif st.session_state.fase == "config":
 elif st.session_state.fase == "juego":
     st.title("🎮 Juego de las Matrículas")
 
-    # Mostrar clasificación
-    st.subheader("🏆 Clasificación actual")
-    for nombre, puntos in sorted(st.session_state.jugadores.items(), key=lambda x: x[1], reverse=True):
-        st.write(f"{nombre}: {puntos} puntos")
-
-    st.divider()
-
-    # Introducir letras
+    # ===== Introducción de letras =====
     letras = st.text_input("Letras de la matrícula (3 letras):", value=st.session_state.letras).strip().lower()
     if letras and len(letras) == 3 and letras.isalpha():
         st.session_state.letras = letras
@@ -136,12 +129,12 @@ elif st.session_state.fase == "juego":
                 st.session_state.palabras_usadas.add(palabra)
                 st.session_state.ultimo_resultado = f"❌ '{palabra.upper()}' no existe o no sigue el orden de letras."
 
-            st.session_state.ultima_accion = True  # bandera para redibujar
+            st.session_state.ultima_accion = True  # marcar actualización
 
     elif letras:
         st.warning("Introduce exactamente 3 letras válidas.")
 
-    # Mostrar resultado (solo si se jugó)
+    # Mostrar resultado (solo si hay acción)
     if st.session_state.ultimo_resultado:
         msg = st.session_state.ultimo_resultado
         if msg.startswith("🧩"):
@@ -151,15 +144,15 @@ elif st.session_state.fase == "juego":
         else:
             st.error(msg)
 
-    # Redibujar el marcador inmediatamente
-    if st.session_state.ultima_accion:
+    # ===== Marcador actualizado (único marcador visible) =====
+    if st.session_state.ultima_accion or any(st.session_state.jugadores.values()):
         st.divider()
-        st.subheader("🏆 Marcador actualizado")
+        st.subheader("🏆 Marcador")
         for nombre, puntos in sorted(st.session_state.jugadores.items(), key=lambda x: x[1], reverse=True):
             st.write(f"{nombre}: {puntos} puntos")
         st.session_state.ultima_accion = False
 
-    # Palabras posibles
+    # ===== Ver palabras válidas =====
     if st.session_state.letras:
         with st.expander("📜 Ver todas las palabras válidas para estas letras"):
             posibles = [p for p in palabras if contiene_en_orden(p, st.session_state.letras)]
@@ -169,7 +162,7 @@ elif st.session_state.fase == "juego":
             else:
                 st.warning("No hay palabras con ese patrón.")
 
-    # Reiniciar partida
+    # ===== Reiniciar partida =====
     st.divider()
     if st.button("🔁 Reiniciar partida"):
         for k in ["jugadores", "letras", "palabras_usadas", "ultimo_resultado", "ultima_accion"]:
