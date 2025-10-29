@@ -52,14 +52,14 @@ if st.session_state.fase == "inicio":
         st.rerun()
 
 # ===============================
-# 🔹 Nueva Fase 2: Instrucciones
+# 🔹 Fase 2: Instrucciones
 # ===============================
 elif st.session_state.fase == "instrucciones":
     st.title("📘 Instrucciones del Juego")
 
     st.markdown(
         """
-        ### 🧩 Objetivo del juego  
+        ### 🚗 Objetivo del juego  
         Con las **tres letras** de una matrícula (por ejemplo, `C S A`), los jugadores deben proponer palabras
         del diccionario español que **contengan esas letras en el mismo orden**.  
         Ejemplo: para `C S A`, palabras válidas serían **CASA**, **COSTA** o **Cosecha**.
@@ -79,7 +79,7 @@ elif st.session_state.fase == "instrucciones":
         st.rerun()
 
 # ===============================
-# 🔹 Fase 2: Configuración
+# 🔹 Fase 3: Configuración
 # ===============================
 elif st.session_state.fase == "config":
     st.title("👥 Configuración de jugadores")
@@ -91,7 +91,7 @@ elif st.session_state.fase == "config":
         for i in range(num):
             nombre = st.text_input(f"Nombre del jugador {i+1}:").strip()
             nombres.append(nombre)
-        enviado = st.form_submit_button("✳️ Confirmar jugadores")
+        enviado = st.form_submit_button("✅ Confirmar jugadores")
 
     if enviado:
         st.session_state.jugadores = {n: 0 for n in nombres if n}
@@ -102,16 +102,20 @@ elif st.session_state.fase == "config":
             st.warning("Debes introducir al menos un nombre válido.")
 
 # ===============================
-# 🔹 Fase 3: Juego
+# 🔹 Fase 4: Juego
 # ===============================
 elif st.session_state.fase == "juego":
     st.title("🎮 Juego de las Matrículas")
+
+    # 🔄 Actualización del marcador si se ha jugado
+    if "_actualizar" in st.session_state:
+        del st.session_state["_actualizar"]
 
     # Clasificación
     st.subheader("🏆 Clasificación actual")
     ranking = sorted(st.session_state.jugadores.items(), key=lambda x: x[1], reverse=True)
     for nombre, puntos in ranking:
-        st.write(f"{nombre}: {puntos} puntos")  # 🔹 Sin formato Markdown
+        st.write(f"{nombre}: {puntos} puntos")
 
     st.divider()
 
@@ -143,8 +147,10 @@ elif st.session_state.fase == "juego":
                 key="palabra_input"
             ).strip().lower()
 
-            # Botón comprobar
-            if st.button("✳️ Comprobar palabra"):
+            # ===============================
+            # 🔹 BOTÓN COMPROBAR PALABRA
+            # ===============================
+            if st.button("🧩 Comprobar palabra"):
                 letras = st.session_state.letras
 
                 if not palabra or not letras or len(letras) != 3:
@@ -154,15 +160,19 @@ elif st.session_state.fase == "juego":
                 elif palabra in palabras and contiene_en_orden(palabra, letras):
                     st.session_state.jugadores[jugador] += 1
                     st.session_state.palabras_usadas.add(palabra)
-                    st.session_state.ultimo_resultado = f"✅ Palabra válida: '{palabra.upper()}' (+1 punto para {jugador})"
+                    st.session_state.ultimo_resultado = f"🧩 Palabra válida: '{palabra.upper()}' (+1 punto para {jugador})"
+
+                    # ✅ Fuerza actualización inmediata del marcador
+                    st.session_state._actualizar = True
+                    st.experimental_rerun()
                 else:
                     st.session_state.palabras_usadas.add(palabra)
                     st.session_state.ultimo_resultado = f"❌ No existe la palabra '{palabra.upper()}' o no sigue el orden de letras."
 
-            # Mostrar resultado y actualizar marcador instantáneamente
+            # Mostrar resultado
             if st.session_state.ultimo_resultado:
                 msg = st.session_state.ultimo_resultado
-                if msg.startswith("✅"):
+                if msg.startswith("🧩"):
                     st.success(msg)
                 elif msg.startswith("⚠️"):
                     st.warning(msg)
@@ -194,5 +204,6 @@ elif st.session_state.fase == "juego":
         st.session_state.fase = "inicio"
         st.success("🔁 Partida reiniciada. Volviendo al inicio...")
         st.rerun()
+
 
 
