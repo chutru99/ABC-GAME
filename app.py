@@ -144,28 +144,47 @@ elif st.session_state.fase == "juego":
         if len(st.session_state.letras) == 3 and st.session_state.letras.isalpha():
             st.write(f"Letras activas: **{st.session_state.letras.upper()}**")
 
-            # Entrada palabra + jugador
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                st.text_input(
-                    "Palabra propuesta:",
-                    key="palabra_actual",
-                    on_change=comprobar_palabra
-                )
-            with col2:
-                st.selectbox(
-                    "Jugador:",
-                    list(st.session_state.jugadores.keys()),
-                    key="jugador_actual"
-                )
+            # ===============================
+            # 🔹 Seleccionar jugador y palabra
+            # ===============================
+            st.subheader("🗣️ Turno del jugador")
 
-            # Mostrar resultado si existe
+            # Primero se selecciona el jugador
+            st.session_state.jugador_actual = st.selectbox(
+                "Selecciona el jugador que introduce la palabra:",
+                list(st.session_state.jugadores.keys()),
+                key="jugador_selector"
+            )
+
+            # Luego se introduce la palabra
+            st.session_state.palabra_actual = st.text_input(
+                "Introduce la palabra propuesta:",
+                key="palabra_input"
+            )
+
+            # Botón para comprobar
+            if st.button("✅ Comprobar palabra"):
+                palabra = st.session_state.palabra_actual.strip().lower()
+                jugador = st.session_state.jugador_actual
+                letras = st.session_state.letras.lower()
+
+                if not palabra or not letras or len(letras) != 3:
+                    st.warning("Introduce tres letras válidas y una palabra.")
+                else:
+                    if palabra in palabras and contiene_en_orden(palabra, letras):
+                        st.success(f"✅ ¡Correcto! '{palabra}' es válida para {letras.upper()}.")
+                        st.session_state.jugadores[jugador] += 1
+                    else:
+                        st.error(f"❌ '{palabra}' no es válida para {letras.upper()}.")
+
+            # Mostrar resultado anterior si existe
             if "ultimo_resultado" in st.session_state:
                 resultado = st.session_state["ultimo_resultado"]
                 if resultado.startswith("✅"):
                     st.success(resultado)
                 else:
                     st.error(resultado)
+
         else:
             st.warning("Introduce exactamente **3 letras** válidas (A-Z).")
     # ===============================
