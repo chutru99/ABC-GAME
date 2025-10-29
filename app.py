@@ -103,7 +103,7 @@ elif st.session_state.fase == "config":
 # 🔹 Fase 4: Juego principal
 # ===============================
 elif st.session_state.fase == "juego":
-    st.title("🎮 Juego de las Matrículas")
+    st.title("🎮 ABC GAME")
 
     # ===== Introducción de letras =====
     letras = st.text_input("Letras de la matrícula (3 letras):", value=st.session_state.letras).strip().lower()
