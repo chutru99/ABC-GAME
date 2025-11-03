@@ -37,7 +37,7 @@ def run_mode():
     # ==============================
     def choose_letters():
         """Elige tres letras distintas con ≥100 palabras posibles."""
-        all_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        all_letters = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ"
         for _ in range(3000):
             combo = "".join(random.sample(all_letters, 3))
             count = sum(1 for w in words if all(l.lower() in w for l in combo.lower()))
